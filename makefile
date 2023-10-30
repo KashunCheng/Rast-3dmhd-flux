@@ -1,8 +1,9 @@
 #FC     =       ifort
-#FC	=	mpif90
-FC	=	ftn
+FC	=	mpif90
+#FC	=	ftn
 # gcc:
-FFLAGS  =       -O2 -std=legacy -ffixed-form
+FFLAGS  =       -O2 -g -std=legacy
+FFLAGS_EXTRA = -ffixed-form
 # intel:
 #FFLAGS =       -O2 -g -traceback
 #FFLAGS =       -O2 -pad -ip -unroll -align -w -i-static -opt-report
@@ -13,9 +14,9 @@ LDIR    =       #-L/coral/local/mpich64/lib64
 
 BIN 	=	 3dmhd.exe
  
-SRC 	=	 3dmhd.f 3dmhdset.f 3dmhdsub.f
+SRC 	=	 3dmhd.f 3dmhdset.f 3dmhdsub.f 3dmhd-flux.f90
 
-OBJ 	=	 3dmhd.o 3dmhdset.o 3dmhdsub.o
+OBJ 	=	 3dmhd.o 3dmhdset.o 3dmhdsub.o 3dmhd-flux.o
 
 $(BIN): $(OBJ)
 	$(FC) $(FFLAGS) $(OBJ) $(LDIR) $(LMPI) -o $(BIN)
@@ -23,9 +24,11 @@ $(BIN): $(OBJ)
 3dmhd.o: 3dmhdparam.f
 3dmhdset.o: 3dmhdparam.f
 3dmhdsub.o: 3dmhdparam.f
+3dmhd-flux.o: 3dmhdparam.f 3dmhd-flux.f90
+	$(FC) $(FFLAGS) -c $(IDIR) 3dmhd-flux.f90
 
 clean:
 	rm -rf *.o $(BIN)
 
 .f.o:
-	$(FC) $(FFLAGS) -c $(IDIR) $*.f
+	$(FC) $(FFLAGS) $(FFLAGS_EXTRA) -c $(IDIR) $*.f
