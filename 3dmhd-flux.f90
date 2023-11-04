@@ -1,6 +1,6 @@
 !**********************************************************************
         SUBROUTINE FLUXES
-!
+!$acc routine seq
            INCLUDE '3dmhdparam.f'
 !
            include 'mpif.h'
@@ -69,6 +69,7 @@
 !       FR=-FR
 !        WW1=(CSHIFT(RV,1,2)-CSHIFT(RV,-1,2))*HY*DYYDY
            IF ((IXC == 0) .AND. (IYC == 0)) THEN
+            !$acc kernels
               DO K = ILAP/2 + 1, NZ - ILAP/2
               DO J = 2, NY - IY + 1
                  TMPY = HY*DYYDY(J)
@@ -80,12 +81,14 @@
                  end do
               end do
               end do
+            !$acc end kernels
            ELSE
               WRITE (6, *) 'FLUXES: Non-periodic horizontal boundaries'
               CALL MPI_FINALIZE(IERR)
               STOP
            END IF
 !       WW1=(CSHIFT(RW,1,3)-CSHIFT(RW,-1,3))*HZ*DZZDZ
+           !$acc kernels
            DO K = ILAP/2 + 1, NZ - ILAP/2
               TMPZ = HZ*DZZDZ(K)
               DO J = 2, NY - IY + 1
@@ -120,6 +123,7 @@
            end do
            end do
            end do
+           !$acc end kernels
 !----------------------------------------------------------------------
 !  Diffusion of density perturbations. Density ghost points loaded by
 !  mirror points so that diffusion on boundary is centered to avoid
@@ -134,7 +138,7 @@
               END IF
 !
               CALL HORIZONTAL_MEAN(ROM, RO)
-!
+            !$acc kernels
               DO K = 1, NZ
               DO J = 1, NY
               DO I = 1, NX
@@ -142,7 +146,9 @@
               end do
               end do
               end do
+            !$acc end kernels
            END IF
+         !$acc kernels
            IF (ID /= 0) THEN
 !-----------------------------------------------------------------------
 !  Specify vertical variation in density diffusion (=1, goes as 1/rhobar,
@@ -363,6 +369,7 @@
                     end do
                  end do
               end do
+              !$acc end kernels
 !----------------------------------------------------------------------
 !  Diffusion ...
 !----------------------------------------------------------------------
@@ -380,7 +387,7 @@
 !  Calculate horizontal mean temperature and temperature perturbations.
 !----------------------------------------------------------------------
                  CALL HORIZONTAL_MEAN(TTM, TT)
-!
+               !$acc kernels
                  DO K = 1, NZ
                     DO J = 1, NY
                        DO I = 1, NX
@@ -388,10 +395,11 @@
                        END DO
                     END DO
                  END DO
+               !$acc end kernels
               END IF
 !
            END IF
-!
+!$acc kernels
            IF (LREM) THEN
 !----------------------------------------------------------------------
 !  Diffuse only temeprature perturbations (M. Rempel)
@@ -472,6 +480,7 @@
                  end do
               end do
            END IF
+         !$acc end kernels
 !----------------------------------------------------------------------
 !  Flux relaxation (M. Rempel).
 !----------------------------------------------------------------------
@@ -510,6 +519,7 @@
 !----------------------------------------------------------------------
 !  Compute mean convective and radiative flux.
 !----------------------------------------------------------------------
+                 !$acc kernels
                  DO K = ILAP/2 + 1, NZ
                     DO J = 1 + IY/2, NY - IY + 1
                        DO I = 1 + IX/2, NX - IX/2
@@ -520,7 +530,8 @@
                        END DO
                     END DO
                  END DO
-!
+                 !$acc end kernels
+
                  CALL HORIZONTAL_MEAN(FCONM, WW2)
 !
                  DO K = ILAP/2 + 1, NZ - ILAP/2
@@ -617,7 +628,7 @@
                     CORRECT(K) = 0.0
                  END DO
               END IF
-!
+!$acc kernels
               DO K = ILAP/2 + 1, NZ - ILAP/2
                  DO J = 1 + IY/2, NY - IY + 1
                     DO I = 1 + IX/2, NX - IX/2
@@ -625,6 +636,7 @@
                     END DO
                  END DO
               END DO
+!$acc end kernels
 !----------------------------------------------------------------------
 !  Write progress of relaxation in output file every 25 time steps.
 !----------------------------------------------------------------------
@@ -643,6 +655,7 @@
 !----------------------------------------------------------------------
 !  Localized embedded heat loss, ramps up to a constant value TP.
 !----------------------------------------------------------------------
+!$acc kernels
            IF (ITC == 2) THEN
               CLN = -4.0E00*LOG(2.0E00)/HH/HH
               IF (TC /= 0.0E00) THEN
@@ -1687,6 +1700,7 @@
               end do
               end do
            END IF
+!$acc end kernels
 !
            RETURN
         END
