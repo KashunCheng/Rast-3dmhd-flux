@@ -900,6 +900,7 @@ c  clear and start the counters
 cc        call  perfctr_start(isel0, isel1, isel2)
 c
 c!       stop 'loop'
+!$acc data
 	DO 1000 NK=NBEG,NTOTAL	
 C
 	CALL STEP
@@ -929,7 +930,7 @@ C
      1                  ,FORM='UNFORMATTED'
      2			,ACCESS='DIRECT',RECL=IWORD*(NX-IX)*(NY-IY)
      3							 *(NZ-ILAP))
-C
+!$acc update self(RU,RV,RW,TT,RO)
 		WRITE(10,REC=ISTRT0+1)RU(2:NX-IX+1,2:NY-IY+1
      2						  ,ILAP/2+1:NZ-ILAP/2)
 		WRITE(10,REC=ISTRT0+2)RV(2:NX-IX+1,2:NY-IY+1
@@ -941,6 +942,7 @@ C
 		WRITE(10,REC=ISTRT0+5)RO(2:NX-IX+1,2:NY-IY+1
      2						  ,ILAP/2+1:NZ-ILAP/2)
 		IF (LMAG) THEN
+!$acc update self(BX,BY,BZ)
 			WRITE(10,REC=ISTRT0+6)BX(2:NX-IX+1,2:NY-IY+1
      2                                            ,ILAP/2+1:NZ-ILAP/2)
                 	WRITE(10,REC=ISTRT0+7)BY(2:NX-IX+1,2:NY-IY+1
@@ -1044,6 +1046,7 @@ C
 	STOP
 C
 5010	CONTINUE
+!$acc end data
 	KSTRT0 = NDUMP0
         IF (LMAG) THEN
                 ISTRT0 = 8*NDUMP0

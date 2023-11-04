@@ -1,3 +1,5 @@
 *.o
 *.exe
 *.lis
+*.nsys-rep
+*.sqlite

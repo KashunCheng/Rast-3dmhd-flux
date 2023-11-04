@@ -2,8 +2,8 @@
 FC	=	mpif90
 #FC	=	ftn
 # gcc:
-FFLAGS  =       -O2 -g -std=legacy
-FFLAGS_EXTRA = -ffixed-form
+FFLAGS  =       -O2 -g -acc -Minfo
+FFLAGS_EXTRA =
 # intel:
 #FFLAGS =       -O2 -g -traceback
 #FFLAGS =       -O2 -pad -ip -unroll -align -w -i-static -opt-report

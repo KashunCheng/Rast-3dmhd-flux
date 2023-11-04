@@ -35,7 +35,7 @@ C   21  NPEY   (adjustable in PARAMETER statement, processors in y direction)
 C--------------------------------------------------------------
 	IPAR(01)  = 1
 	IPAR(02)  = 1
-	IPAR(03)  = 1000
+	IPAR(03)  = 1
 	IPAR(04)  = 1001
 	IPAR(05)  = 0
 C        

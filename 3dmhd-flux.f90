@@ -67,6 +67,7 @@
 !       FR=(CSHIFT(RU,1,1)-CSHIFT(RU,-1,1))*HX*DXXDX
 !       FR=-FR
 !        WW1=(CSHIFT(RV,1,2)-CSHIFT(RV,-1,2))*HY*DYYDY
+!$acc data 
            IF ((IXC == 0) .AND. (IYC == 0)) THEN
             !$acc kernels
               DO K = ILAP/2 + 1, NZ - ILAP/2
@@ -129,14 +130,15 @@
 !  forward/backward difference instability (ITP Santa Barbara).
 !----------------------------------------------------------------------
            IF ((ID /= 0) .OR. LREM) THEN
+!$acc update self(RO,ROM)
               IF (MYPEZ == 0) THEN
                  RO(:, :, 1:ILAP/2) = RO(:, :, ILAP/2 + 2:ILAP + 1)
               END IF
               IF (MYPEZ == NPEZ - 1) THEN
                  RO(:, :, NZ - ILAP/2 + 1:NZ) = RO(:, :, NZ - ILAP:NZ - ILAP/2 - 1)
               END IF
-!
               CALL HORIZONTAL_MEAN(ROM, RO)
+!$acc update device(RO,ROM)
             !$acc kernels
               DO K = 1, NZ
               DO J = 1, NY
@@ -386,7 +388,9 @@
 !----------------------------------------------------------------------
 !  Calculate horizontal mean temperature and temperature perturbations.
 !----------------------------------------------------------------------
+               !$acc update self(TT)
                  CALL HORIZONTAL_MEAN(TTM, TT)
+               !$acc update device(TTM)
                !$acc kernels
                  DO K = 1, NZ
                     DO J = 1, NY
@@ -531,7 +535,7 @@
                     END DO
                  END DO
                  !$acc end kernels
-
+!$acc update self(WW2)
                  CALL HORIZONTAL_MEAN(FCONM, WW2)
 !
                  DO K = ILAP/2 + 1, NZ - ILAP/2
@@ -628,6 +632,7 @@
                     CORRECT(K) = 0.0
                  END DO
               END IF
+!$acc update device(CORRECT)
 !$acc kernels
               DO K = ILAP/2 + 1, NZ - ILAP/2
                  DO J = 1 + IY/2, NY - IY + 1
@@ -1701,7 +1706,7 @@
               end do
            END IF
 !$acc end kernels
-!
+!$acc end data
            RETURN
         END
 !**********************************************************************

@@ -9,7 +9,7 @@
      &          , LSHR=.FALSE.)
 !        LROT: Rotation, LMAG: Magentic fields, LPOT: Ensure divB=0, LREM: Rempel relax, LSHR: Shear instability.
 !  The minimum # of processors in the z direction is 2 at the moment!
-        PARAMETER(NPEY=4, NPEZ=6, NPE=NPEY*NPEZ)
+        PARAMETER(NPEY=4, NPEZ=5, NPE=NPEY*NPEZ)
         PARAMETER(NPX=256, NPY=256, NPZ=256)
 !
         PARAMETER(IX=2, IY=2, IPAD=0, ILAP=2)
