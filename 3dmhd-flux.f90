@@ -1,6 +1,5 @@
 !**********************************************************************
         SUBROUTINE FLUXES
-!$acc routine seq
            INCLUDE '3dmhdparam.f'
 !
            include 'mpif.h'
@@ -343,6 +342,7 @@
                  end do
               end do
            end do
+         !$acc end kernels
 !----------------------------------------------------------------------
 !  Calculate energy fluxes.  Advection ...
 !----------------------------------------------------------------------
@@ -354,7 +354,7 @@
 !        FT=FT-VV*WW3
 !
            IF (.NOT. LSHR) THEN
-!
+            !$acc kernels
               DO K = ILAP/2 + 1, NZ - ILAP/2
                  TMPZ = HZ*DZZDZ(K)
                  DO J = 2, NY - IY + 1
@@ -369,7 +369,7 @@
                     end do
                  end do
               end do
-              !$acc end kernels
+            !$acc end kernels
 !----------------------------------------------------------------------
 !  Diffusion ...
 !----------------------------------------------------------------------
