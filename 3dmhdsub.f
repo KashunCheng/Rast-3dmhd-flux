@@ -3660,11 +3660,11 @@ C integration routine grabbed from the Numerical Recipies
 C I have modified them: changed from REAL to REAL*8	
 C I changed also EPS=1.e-6 into EPS=1.e-9	
 C**********************************************************************	
-      SUBROUTINE qromb(func,a,b,ss)
+      SUBROUTINE qromb(ff,a,b,ss)
       INTEGER JMAX,JMAXP,K,KM
-      REAL*8 a,b,func,ss,EPS
-c      REAL a,b,func,ss,EPS
-      EXTERNAL func
+      REAL*8 a,b,ff,ss,EPS
+c      REAL a,b,ff,ss,EPS
+      EXTERNAL ff
       PARAMETER (EPS=1.e-9, JMAX=20, JMAXP=JMAX+1, K=5, KM=K-1)
 CU    USES polint,trapzd
       INTEGER j
@@ -3672,7 +3672,7 @@ CU    USES polint,trapzd
 c      REAL dss,h(JMAXP),s(JMAXP)
       h(1)=1.
       do 11 j=1,JMAX
-        call trapzd(func,a,b,s(j),j)
+        call trapzd(ff,a,b,s(j),j)
         if (j.ge.K) then
           call polint(h(j-KM),s(j-KM),K,0.0d0,ss,dss)
           if (abs(dss).le.EPS*abs(ss)) return
@@ -3730,16 +3730,16 @@ c      REAL den,dif,dift,ho,hp,w,c(NMAX),d(NMAX)
 C  (C) Copr. 1986-92 Numerical Recipes Software );.
       
       
-      SUBROUTINE trapzd(func,a,b,s,n)
+      SUBROUTINE trapzd(ff,a,b,s,n)
       INTEGER n
-      REAL*8 a,b,s,func
-c      REAL a,b,s,func
-      EXTERNAL func
+      REAL*8 a,b,s,ff
+c      REAL a,b,s,ff
+      EXTERNAL ff
       INTEGER it,j
       REAL*8 del,sum,tnm,x
 c      REAL del,sum,tnm,x
       if (n.eq.1) then
-        s=0.5*(b-a)*(func(a)+func(b))
+        s=0.5*(b-a)*(ff(a)+ff(b))
       else
         it=2**(n-2)
         tnm=it
@@ -3747,7 +3747,7 @@ c      REAL del,sum,tnm,x
         x=a+0.5*del
         sum=0.
         do 11 j=1,it
-          sum=sum+func(x)
+          sum=sum+ff(x)
           x=x+del
 11      continue
         s=0.5*(s+(b-a)*sum/tnm)
@@ -4483,7 +4483,7 @@ c----------------------------------------------------------------------
       return
       end
 c========================================================================
-      SUBROUTINE ODEINT(YSTART,NVAR,X1,X2,EPS,H1,HMIN,NOK,NBAD,DERIVS,RK
+      SUBROUTINE ODEINT(YSTART,NVAR,X1,X2,EPS,H1,HMIN,NOK,NBAD,DERIVS1,RK
      *QC)
       IMPLICIT REAL*8 (A-H,O-Z)
 c      IMPLICIT REAL (A-H,O-Z)
@@ -4492,7 +4492,7 @@ c      IMPLICIT REAL (A-H,O-Z)
       COMMON /PATH2/ DXSAV,XP(100),YP(2,100)
 
       DIMENSION YSTART(NVAR),YSCAL(NMAX),Y(NMAX),DYDX(NMAX)
-      EXTERNAL DERIVS, RKQC
+      EXTERNAL DERIVS1, RKQC
 C      PRINT*, 'odeint'
 
       X=X1
@@ -4505,7 +4505,7 @@ C      PRINT*, 'odeint'
 11    CONTINUE
       XSAV=X-DXSAV*TWO
       DO 16 NSTP=1,MAXSTP
-        CALL DERIVS(X,Y,DYDX)
+        CALL DERIVS1(X,Y,DYDX)
         DO 12 I=1,NVAR
           YSCAL(I)=ABS(Y(I))+ABS(H*DYDX(I))+TINY
 12      CONTINUE
@@ -4522,7 +4522,7 @@ C      PRINT*, 'odeint'
           ENDIF
         ENDIF
         IF((X+H-X2)*(X+H-X1).GT.ZERO) H=X2-X
-        CALL RKQC(Y,DYDX,NVAR,X,H,EPS,YSCAL,HDID,HNEXT,DERIVS)
+        CALL RKQC(Y,DYDX,NVAR,X,H,EPS,YSCAL,HDID,HNEXT,DERIVS1)
         IF(HDID.EQ.H)THEN
           NOK=NOK+1
         ELSE
@@ -4549,12 +4549,12 @@ C      PRINT*, 'odeint'
       END
 
 c======================================================================
-      SUBROUTINE RKQC(Y,DYDX,N,X,HTRY,EPS,YSCAL,HDID,HNEXT,DERIVS)
+      SUBROUTINE RKQC(Y,DYDX,N,X,HTRY,EPS,YSCAL,HDID,HNEXT,DERIVS1)
       IMPLICIT REAL*8 (A-H,O-Z)
 c      IMPLICIT REAL (A-H,O-Z)
       PARAMETER (NMAX=10,FCOR=1.0D0/15.0D0,
      .    ONE=1.,SAFETY=0.9,ERRCON=6.D-4)
-      EXTERNAL DERIVS
+      EXTERNAL DERIVS1
       DIMENSION Y(N),DYDX(N),YSCAL(N),YTEMP(NMAX),YSAV(NMAX),DYSAV(NMAX)
       PGROW=-0.20
       PSHRNK=-0.25
@@ -4565,13 +4565,13 @@ c      IMPLICIT REAL (A-H,O-Z)
 11    CONTINUE
       H=HTRY
 1     HH=0.5*H
-      CALL RK4(YSAV,DYSAV,N,XSAV,HH,YTEMP,DERIVS)
+      CALL RK4(YSAV,DYSAV,N,XSAV,HH,YTEMP,DERIVS1)
       X=XSAV+HH
-      CALL DERIVS(X,YTEMP,DYDX)
-      CALL RK4(YTEMP,DYDX,N,X,HH,Y,DERIVS)
+      CALL DERIVS1(X,YTEMP,DYDX)
+      CALL RK4(YTEMP,DYDX,N,X,HH,Y,DERIVS1)
       X=XSAV+H
       IF(X.EQ.XSAV)PAUSE 'Stepsize not significant in RKQC.'
-      CALL RK4(YSAV,DYSAV,N,XSAV,H,YTEMP,DERIVS)
+      CALL RK4(YSAV,DYSAV,N,XSAV,H,YTEMP,DERIVS1)
       ERRMAX=0.
       DO 12 I=1,N
         YTEMP(I)=Y(I)-YTEMP(I)
@@ -4596,28 +4596,28 @@ c      IMPLICIT REAL (A-H,O-Z)
       END
 
 c=======================================================================
-      SUBROUTINE RK4(Y,DYDX,N,X,H,YOUT,DERIVS)
+      SUBROUTINE RK4(Y,DYDX,N,X,H,YOUT,DERIVS1)
       IMPLICIT REAL*8 (A-H,O-Z)
 c      IMPLICIT REAL (A-H,O-Z)
       PARAMETER (NMAX=10)
       DIMENSION Y(N),DYDX(N),YOUT(N),YT(NMAX),DYT(NMAX),DYM(NMAX)
-      EXTERNAL DERIVS
+      EXTERNAL DERIVS1
       HH=H*0.5
       H6=H/6.
       XH=X+HH
       DO 11 I=1,N
         YT(I)=Y(I)+HH*DYDX(I)
 11    CONTINUE
-      CALL DERIVS(XH,YT,DYT)
+      CALL DERIVS1(XH,YT,DYT)
       DO 12 I=1,N
         YT(I)=Y(I)+HH*DYT(I)
 12    CONTINUE
-      CALL DERIVS(XH,YT,DYM)
+      CALL DERIVS1(XH,YT,DYM)
       DO 13 I=1,N
         YT(I)=Y(I)+H*DYM(I)
         DYM(I)=DYT(I)+DYM(I)
 13    CONTINUE
-      CALL DERIVS(X+H,YT,DYT)
+      CALL DERIVS1(X+H,YT,DYT)
       DO 14 I=1,N
         YOUT(I)=Y(I)+H6*(DYDX(I)+DYT(I)+2.*DYM(I))
 14    CONTINUE
