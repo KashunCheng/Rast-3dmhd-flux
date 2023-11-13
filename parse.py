@@ -1,9 +1,7 @@
 from typing import Set, List, Tuple
 import re
-from fparser.common.readfortran import FortranStringReader
-from fparser.common.sourceinfo import FortranFormat
-from fparser.one.parsefortran import FortranParser
 
+from fparser.common.base_classes import Statement
 from fparser.one.block_statements import (Subroutine, Function, Do, Character, Assignment,
                                           IfThen, Goto, EndIfThen, Continue, Return, EndSubroutine,
                                           Implicit, Logical, Dimension, Parameter, Common,
@@ -13,8 +11,9 @@ from fparser.one.block_statements import (Subroutine, Function, Do, Character, A
                                           EndProgram, Read0, Format)
 
 from antlr4 import *
-from fparser.one.statements import Else
+from fparser.one.statements import Else, Comment
 
+from load_functions import srcs
 from parser_io import save_user_defined_function_effects, load_user_defined_function_effects
 from parser.Fortran77Lexer import Fortran77Lexer
 from parser.Fortran77Parser import Fortran77Parser
@@ -23,11 +22,6 @@ from parser.Fortran77Visitor import Fortran77VariableVisitor, Fortran77VariableA
 from side_effects import BlockSideEffects, CallSideEffects, ArgumentsSideEffects, GlobalsSideEffects
 
 filename = '3dmhd.f'
-
-reader = FortranStringReader(open(filename).read(), include_dirs=['.', './mpif'])
-reader.set_format(FortranFormat(False, False))
-parser = FortranParser(reader)
-parser.parse()
 
 fortran_functions = {'len'}
 mpi_function_effects = {
@@ -112,7 +106,7 @@ def analyze_variable_lifecycle(block, super_effects: BlockSideEffects) -> BlockS
             return analyze_program(block)
         case Implicit() | Logical() | Character() | Parameter() | Common() | Integer() | DoublePrecision() | Interface():
             return BlockSideEffects()
-        case Goto() | Continue() | Return() | Stop() | Pause() | Open() | Close() | Save() | EndFunction() | EndProgram():
+        case Goto() | Continue() | Return() | Stop() | Pause() | Open() | Close() | Save() | EndFunction() | EndProgram() | Comment():
             return BlockSideEffects()
         case Read0():
             variable_written = set()
@@ -265,27 +259,75 @@ def update_user_defined_function_effects(block, eff: BlockSideEffects):
     )
 
 
-call_dependency = None
-while True:
-    try:
-        if call_dependency is not None:
-            x = analyze_variable_lifecycle(call_dependency, BlockSideEffects())
-            update_user_defined_function_effects(call_dependency, x)
-            print(call_dependency.name, x)
-        call_dependency = None
-        for b in parser.block.content:
-            if b.name in user_defined_function_effects:
-                continue
-            x = analyze_variable_lifecycle(b, BlockSideEffects())
-            if isinstance(b, (Function, Subroutine)):
-                update_user_defined_function_effects(b, x)
-            print(b.name, x)
-        save_user_defined_function_effects(user_defined_function_effects, filename)
-        exit(0)
-    except SubroutineNotFound as e:
-        for b in parser.block.content:
-            if b.name == e.name:
-                call_dependency = b
-                break
-        else:
-            raise e
+def all_are_cpu_variables(gpu_variables: set[str], variables: set[str]):
+    for v in variables:
+        if v in gpu_variables:
+            return False
+    return True
+
+
+def track_illegal_data_movement(gpu_variables: set[str], gpu_code: list[Statement], block: Statement) -> List[
+    Statement]:
+    if isinstance(block, Do):
+        return []
+    match block:
+        case Assignment():
+            r, w = extract_assignment_variables(block.variable)
+            has_gpu_variables = gpu_variables.intersection(r.union(w).union(extract_variables(block.expr)))
+            if has_gpu_variables:
+                return [block]
+            return []
+        case Subroutine():
+            all = []
+            for c in block.content:
+                all += track_illegal_data_movement(gpu_variables, gpu_code, c)
+            return all
+        case Implicit() | Logical() | Character() | Dimension() | Parameter() | Integer() | Real() | DoublePrecision() | External() | Common() | Interface() | Comment() | Else() | EndIfThen() | EndSubroutine() | Data() | Save() | Call() | Return() | Stop():
+            return []
+        # we have implemented all write
+        case Write():
+            return []
+        case IfThen() | If():
+            all = []
+            condition_variables = extract_variables(block.expr)
+            has_gpu_variables = gpu_variables.intersection(condition_variables)
+            if has_gpu_variables:
+                all = [block]
+            for c in block.content:
+                all += track_illegal_data_movement(gpu_variables, gpu_code, c)
+            return all
+        case ElseIf():
+            condition_variables = extract_variables(block.expr)
+            has_gpu_variables = gpu_variables.intersection(condition_variables)
+            if has_gpu_variables:
+                return [block]
+            return []
+        case _:
+            return []
+
+
+if __name__ == '__main__':
+    call_dependency = None
+    while True:
+        try:
+            if call_dependency is not None:
+                x = analyze_variable_lifecycle(call_dependency, BlockSideEffects())
+                update_user_defined_function_effects(call_dependency, x)
+                print(call_dependency.name, x)
+            call_dependency = None
+            for b in srcs[filename].content:
+                if b.name in user_defined_function_effects:
+                    continue
+                x = analyze_variable_lifecycle(b, BlockSideEffects())
+                if isinstance(b, (Function, Subroutine)):
+                    update_user_defined_function_effects(b, x)
+                print(b.name, x)
+            save_user_defined_function_effects(user_defined_function_effects, filename)
+            exit(0)
+        except SubroutineNotFound as e:
+            for b in srcs[filename].content:
+                if b.name == e.name:
+                    call_dependency = b
+                    break
+            else:
+                raise e
