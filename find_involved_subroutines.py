@@ -179,8 +179,9 @@ def execute_fixup(gpu_code):
         loop_variable_access = loop_variable_access.union(
             side_effects[s].globals.variable_read.union(side_effects[s].globals.variable_written))
     result = common_variables.intersection(loop_variable_access)
+    result = sorted(list(result))
     s = do_loop
-    insert_comment_at_index(s.parent, data_directive(copy=list(result)), s.parent.content.index(s))
+    insert_comment_at_index(s.parent, data_directive(copy=result), s.parent.content.index(s))
     s = s.parent.content[s.parent.content.index(s) + 4]
     assert isinstance(s, Continue)
     assert s.label == 5010
@@ -188,3 +189,4 @@ def execute_fixup(gpu_code):
     # replace_calls(program_before_do_loop, 'comm_mpi', 'comm_mpi_cpu', ['comm_mpi', 'communicate'])
     # replace_calls(program_before_do_loop, 'communicate', 'communicate_cpu', ['comm_mpi', 'communicate'])
     replace_calls(program_before_do_loop, 'communicate', 'communicate_cpu')
+    return result

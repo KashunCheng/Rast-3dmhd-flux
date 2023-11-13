@@ -1,4 +1,4 @@
-C      BEGINSOURCE <_io.StringIO object at 0x105d0d750> mode=fix
+C      BEGINSOURCE <_io.StringIO object at 0x1056c89d0> mode=fix
         PROGRAM threedmhd
           include '3dmhdparam.f'
           CHARACTER(LEN=50) fin0, fin1, ff0, ff1, flog
@@ -751,10 +751,10 @@ C      BEGINSOURCE <_io.StringIO object at 0x105d0d750> mode=fix
             END IF
           END IF
           nbeg = nit + 1
-C$acc data copy(ro,zru,dxxdx,ww1,ft,fu,d2zzdz2,rv,zrw,zee,zrv,nit,tt,myp&
-C$acc&e,zbx,fw,d2xxdx2,vv,fv,ww2,ddx,by,ww,rkapa,fr,timc,exx,ntotal,bx,d&
-C$acc&t,ztt,ddy,timt,nstep0,umach,timi,d2yydy2,ru,ddz,ww3,uu,dkapa,bz,zb&
-C$acc&z,wyy,dyydy,dzzdz,zby,zro,rw)
+C$acc data copy(bx,by,bz,d2xxdx2,d2yydy2,d2zzdz2,ddx,ddy,ddz,dkapa,dt,dx&
+C$acc&xdx,dyydy,dzzdz,exx,fr,ft,fu,fv,fw,mype,nit,nstep0,ntotal,rkapa,ro&
+C$acc&,ru,rv,rw,timc,timi,timt,tt,umach,uu,vv,ww,ww1,ww2,ww3,wyy,zbx,zby&
+C$acc&,zbz,zee,zro,zru,zrv,zrw,ztt)
           DO 1000 nk=nbeg,ntotal
             CALL step
             par1(15) = float(nit)

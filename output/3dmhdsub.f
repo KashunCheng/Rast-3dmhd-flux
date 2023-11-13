@@ -1,4 +1,4 @@
-C      BEGINSOURCE <_io.StringIO object at 0x106d84d30> mode=fix
+C      BEGINSOURCE <_io.StringIO object at 0x107233640> mode=fix
         SUBROUTINE slength(strng, jlen)
           CHARACTER(LEN=80) strng
           ilen = len(strng)

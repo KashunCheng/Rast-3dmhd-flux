@@ -3,6 +3,7 @@ import re
 from fparser.one.block_statements import Statement
 from fparser.one.statements import Call, Write
 
+from dump_common_data import generate_dump_common_data
 from find_involved_subroutines import execute_fixup
 from get_runtime_functions import apply_acc_kernels_for_top_level_do, find_impure_statements, insert_comment_at_index
 from load_functions import srcs, filenames
@@ -178,7 +179,9 @@ for iws in impure_write_statements:
 for ics in impure_call_statements:
     transpile_mpi_statement(ics)
 
-execute_fixup(gpu_code)
+common_data = execute_fixup(gpu_code)
+with open('output/dump.f', 'w') as f:
+    f.write(generate_dump_common_data(common_data))
 
 for filename in filenames:
     block = srcs[filename]
