@@ -174,11 +174,12 @@ def execute_fixup(gpu_code):
     loop_variable_access = analyze_variable_lifecycle(do_loop, BlockSideEffects())
     loop_variable_access = loop_variable_access.variable_read.union(loop_variable_access.variable_written)
     common_variables = parse_common_block(srcs['3dmhd.f'].content[0])
+    dimension_variables = parse_dimension_block(srcs['3dmhd.f'].content[0])
     side_effects = load_user_defined_function_effects({}, '3dmhdsub.f')
     for s in subroutines_need_to_check_data_movement:
         loop_variable_access = loop_variable_access.union(
             side_effects[s].globals.variable_read.union(side_effects[s].globals.variable_written))
-    result = common_variables.intersection(loop_variable_access)
+    result = common_variables.intersection(loop_variable_access).intersection(dimension_variables)
     result = sorted(list(result))
     s = do_loop
     insert_comment_at_index(s.parent, data_directive(copy=result), s.parent.content.index(s))
