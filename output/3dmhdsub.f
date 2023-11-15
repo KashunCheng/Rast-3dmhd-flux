@@ -1,4 +1,4 @@
-C      BEGINSOURCE <_io.StringIO object at 0x10483f760> mode=fix
+C      BEGINSOURCE <_io.StringIO object at 0x10703b760> mode=fix
         SUBROUTINE slength(strng, jlen)
           CHARACTER(LEN=80) strng
           ilen = len(strng)
@@ -2890,89 +2890,101 @@ C$acc end kernels
           IF (npez.gt.1) THEN
             itag = 100
             IF (mypez.eq.0) THEN
-C$acc update self(VAR(:,:,NZ-ILAP+1:NZ-ILAP+ILAP/2))
+C$acc host_data use_device(VAR)
               CALL mpi_send(var(1,1,nz-ilap+1), nx*ny*(ilap/2), mpisize,&
      & mype+npey, itag, mpi_comm_world, ierr)
+C$acc end host_data
             ELSE IF (mypez.eq.npez-1) THEN
+C$acc host_data use_device(VAR)
               CALL mpi_recv(var(1,1,1), nx*ny*(ilap/2), mpisize, mype-np&
      &ey, itag, mpi_comm_world, istatus, ierr)
-C$acc update device(VAR(:,:,:ILAP/2))
+C$acc end host_data
             ELSE
-C$acc update self(VAR(:,:,NZ-ILAP+1:NZ-ILAP+ILAP/2))
+C$acc host_data use_device(VAR)
               CALL mpi_sendrecv(var(1,1,nz-ilap+1), nx*ny*(ilap/2), mpis&
      &ize, mype+npey, itag, var(1,1,1), nx*ny*(ilap/2), mpisize, mype-np&
      &ey, itag, mpi_comm_world, istatus, ierr)
-C$acc update device(VAR(:,:,:ILAP/2))
+C$acc end host_data
             END IF
             itag = 200
             IF (mypez.eq.0) THEN
+C$acc host_data use_device(VAR)
               CALL mpi_recv(var(1,1,nz-ilap/2+1), nx*ny*(ilap/2), mpisiz&
      &e, mype+npey, itag, mpi_comm_world, istatus, ierr)
-C$acc update device(VAR(:,:,NZ-ILAP/2+1:NZ))
+C$acc end host_data
             ELSE IF (mypez.eq.npez-1) THEN
-C$acc update self(VAR(:,:,ILAP/2+1:ILAP/2+ILAP/2))
+C$acc host_data use_device(VAR)
               CALL mpi_send(var(1,1,ilap/2+1), nx*ny*(ilap/2), mpisize, &
      &mype-npey, itag, mpi_comm_world, ierr)
+C$acc end host_data
             ELSE
-C$acc update self(VAR(:,:,ILAP/2+1:ILAP/2+ILAP/2))
+C$acc host_data use_device(VAR)
               CALL mpi_sendrecv(var(1,1,ilap/2+1), nx*ny*(ilap/2), mpisi&
      &ze, mype-npey, itag, var(1,1,nz-ilap/2+1), nx*ny*(ilap/2), mpisize&
      &, mype+npey, itag, mpi_comm_world, istatus, ierr)
-C$acc update device(VAR(:,:,NZ-ILAP/2+1:NZ))
+C$acc end host_data
             END IF
           END IF
           IF (npey.gt.1) THEN
             itag = 300
             IF (mypey.eq.0) THEN
-C$acc update self(VAR(:,NY-IY+1:NY-IY/2,:))
+C$acc host_data use_device(VAR)
               CALL mpi_send(var(:,ny-iy+1:ny-iy/2,:), nx*nz*(iy/2), mpis&
      &ize, mype+1, itag, mpi_comm_world, ierr)
+C$acc end host_data
             ELSE IF (mypey.eq.npey-1) THEN
+C$acc host_data use_device(VAR)
               CALL mpi_recv(var(:,1:iy/2,:), nx*nz*(iy/2), mpisize, mype&
      &-1, itag, mpi_comm_world, istatus, ierr)
-C$acc update device(VAR(:,1:IY/2,:))
+C$acc end host_data
             ELSE
-C$acc update self(VAR(:,NY-IY+1:NY-IY/2,:))
+C$acc host_data use_device(VAR)
               CALL mpi_sendrecv(var(:,ny-iy+1:ny-iy/2,:), nx*nz*(iy/2), &
      &mpisize, mype+1, itag, var(:,1:iy/2,:), nx*nz*(iy/2), mpisize, myp&
      &e-1, itag, mpi_comm_world, istatus, ierr)
-C$acc update device(VAR(:,1:IY/2,:))
+C$acc end host_data
             END IF
             itag = 400
             IF (mypey.eq.0) THEN
+C$acc host_data use_device(VAR)
               CALL mpi_recv(var(:,ny-iy/2+1:ny,:), nx*nz*(iy/2), mpisize&
      &, mype+1, itag, mpi_comm_world, istatus, ierr)
-C$acc update device(VAR(:,NY-IY/2+1:NY,:))
+C$acc end host_data
             ELSE IF (mypey.eq.npey-1) THEN
-C$acc update self(VAR(:,IY/2+1:IY,:))
+C$acc host_data use_device(VAR)
               CALL mpi_send(var(:,iy/2+1:iy,:), nx*nz*(iy/2), mpisize, m&
      &ype-1, itag, mpi_comm_world, ierr)
+C$acc end host_data
             ELSE
-C$acc update self(VAR(:,IY/2+1:IY,:))
+C$acc host_data use_device(VAR)
               CALL mpi_sendrecv(var(:,iy/2+1:iy,:), nx*nz*(iy/2), mpisiz&
      &e, mype-1, itag, var(:,ny-iy/2+1:ny,:), nx*nz*(iy/2), mpisize, myp&
      &e+1, itag, mpi_comm_world, istatus, ierr)
-C$acc update device(VAR(:,NY-IY/2+1:NY,:))
+C$acc end host_data
             END IF
             itag = 500
             IF (mypey.eq.0) THEN
-C$acc update self(VAR(:,IY/2+1:IY,:))
+C$acc host_data use_device(VAR)
               CALL mpi_send(var(:,iy/2+1:iy,:), nx*nz*(iy/2), mpisize, m&
      &ype+npey-1, itag, mpi_comm_world, ierr)
+C$acc end host_data
             ELSE IF (mypey.eq.npey-1) THEN
+C$acc host_data use_device(VAR)
               CALL mpi_recv(var(:,ny-iy/2+1:ny,:), nx*nz*(iy/2), mpisize&
      &, mype-npey+1, itag, mpi_comm_world, istatus, ierr)
-C$acc update device(VAR(:,NY-IY/2+1:NY,:))
+C$acc end host_data
             END IF
             itag = 600
             IF (mypey.eq.0) THEN
+C$acc host_data use_device(VAR)
               CALL mpi_recv(var(:,1:iy/2,:), nx*nz*(iy/2), mpisize, mype&
      &+npey-1, itag, mpi_comm_world, istatus, ierr)
-C$acc update device(VAR(:,1:IY/2,:))
+C$acc end host_data
             ELSE IF (mypey.eq.npey-1) THEN
-C$acc update self(VAR(:,NY-IY+1:NY-IY/2,:))
+C$acc host_data use_device(VAR)
               CALL mpi_send(var(:,ny-iy+1:ny-iy/2,:), nx*nz*(iy/2), mpis&
      &ize, mype-npey+1, itag, mpi_comm_world, ierr)
+C$acc end host_data
             END IF
           ELSE
 C$acc kernels

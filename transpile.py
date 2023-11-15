@@ -7,8 +7,7 @@ from dump_common_data import generate_dump_common_data
 from find_involved_subroutines import execute_fixup
 from get_runtime_functions import apply_acc_kernels_for_top_level_do, find_impure_statements, insert_comment_at_index
 from load_functions import srcs, filenames
-from openacc import update_self_directive, update_device_directive
-from parse import track_illegal_data_movement
+from openacc import update_self_directive, host_data_use_device, host_data_use_device_end
 
 
 def find_index_of_a_line(line_to_match: str, block: Statement) -> int:
@@ -38,23 +37,23 @@ def transpile_mpi_statement(s: Call):
     data = {
         'mpi_send': {
             'CALL MPI_SEND(VAR(1,1,NZ-ILAP+1),NX*NY*(ILAP/2),MPISIZE,                     MYPE+NPEY,ITAG,MPI_COMM_WORLD,IERR)':
-                ['VAR(:,:,NZ-ILAP+1:NZ-ILAP+ILAP/2)'],
+                ['VAR'],
             'CALL MPI_SEND(VAR(:,NY-IY+1:NY-IY/2,:),NX*NZ*(IY/2),              MPISIZE,MYPE-NPEY+1,ITAG,MPI_COMM_WORLD,IERR)':
-                ['VAR(:,NY-IY+1:NY-IY/2,:)'],
+                ['VAR'],
             'CALL MPI_SEND(WWZ,NZ,MPISIZE,MYPEZ*NPEY,                    ITAG,MPI_COMM_WORLD,IERR)':
             #     ['WWZ'],
                   [],
             'CALL MPI_SEND(VAR(:,IY/2+1:IY,:),NX*NZ*(IY/2),MPISIZE,                    MYPE-1,ITAG,MPI_COMM_WORLD,IERR)':
-                ['VAR(:,IY/2+1:IY,:)'],
+                ['VAR'],
             'CALL MPI_SEND(VAR(:,IY/2+1:IY,:),NX*NZ*(IY/2),MPISIZE,                     MYPE+NPEY-1,ITAG,MPI_COMM_WORLD,IERR)':
-                ['VAR(:,IY/2+1:IY,:)'],
+                ['VAR'],
             'CALL MPI_SEND(VAR(:,NY-IY+1:NY-IY/2,:),NX*NZ*(IY/2),                    MPISIZE,MYPE+1,ITAG,MPI_COMM_WORLD,IERR)':
-                ['VAR(:,NY-IY+1:NY-IY/2,:)'],
+                ['VAR'],
             'CALL MPI_SEND(ENDVAL(MYPEZ+1),1,MPISIZE,0,                           ITAG,MPI_COMM_WORLD,IERR)':
             #     ['ENDVAL(MYPEZ+1)'],
                   [],
             'CALL MPI_SEND(VAR(1,1,ILAP/2+1),NX*NY*(ILAP/2),MPISIZE,                    MYPE-NPEY,ITAG,MPI_COMM_WORLD,IERR)':
-                ['VAR(:,:,ILAP/2+1:ILAP/2+ILAP/2)'],
+                ['VAR'],
             'CALL MPI_SEND(FRADM(ILAP/2+1),1,MPISIZE,                    MYPE-NPEY,ITAG,MPI_COMM_WORLD,IERR)':
             #     ['FRADM(ILAP/2+1)']
                   []
@@ -64,33 +63,33 @@ def transpile_mpi_statement(s: Call):
             #     ['FRADM(NZ)'],
                   [],
             'CALL MPI_RECV(VAR(:,1:IY/2,:),NX*NZ*(IY/2),MPISIZE,                MYPE+NPEY-1,ITAG,MPI_COMM_WORLD,ISTATUS,IERR)':
-                ['VAR(:,1:IY/2,:)'],
+                ['VAR'],
             'CALL MPI_RECV(VAR(1,1,NZ-ILAP/2+1),NX*NY*(ILAP/2),MPISIZE,                    MYPE+NPEY,ITAG,MPI_COMM_WORLD,ISTATUS,IERR)':
-                ['VAR(:,:,NZ-ILAP/2+1:NZ)'],
+                ['VAR'],
             'CALL MPI_RECV(VAR(:,NY-IY/2+1:NY,:),NX*NZ*(IY/2),        MPISIZE,MYPE-NPEY+1,ITAG,MPI_COMM_WORLD,ISTATUS,IERR)':
-                ['VAR(:,NY-IY/2+1:NY,:)'],
+                ['VAR'],
             'CALL MPI_RECV(VAR(:,1:IY/2,:),NX*NZ*(IY/2),MPISIZE,                    MYPE-1,ITAG,MPI_COMM_WORLD,ISTATUS,IERR)':
-                ['VAR(:,1:IY/2,:)'],
+                ['VAR'],
             'CALL MPI_RECV(VAR(:,NY-IY/2+1:NY,:),NX*NZ*(IY/2),MPISIZE,                    MYPE+1,ITAG,MPI_COMM_WORLD,ISTATUS,IERR)':
-                ['VAR(:,NY-IY/2+1:NY,:)'],
+                ['VAR'],
             'CALL MPI_RECV(VAR(1,1,1),NX*NY*(ILAP/2),MPISIZE,MYPE-NPEY,                     ITAG,MPI_COMM_WORLD,ISTATUS,IERR)':
-                ['VAR(:,:,:ILAP/2)'],
+                ['VAR'],
             'CALL MPI_RECV(VARM,NZ,MPISIZE,MYPEZ*NPEY,                    ITAG,MPI_COMM_WORLD,ISTATUS,IERR)':
             #     ['VARM']
                   []
         },
         'mpi_sendrecv': {
             'CALL MPI_SENDRECV(VAR(:,IY/2+1:IY,:),NX*NZ*(IY/2),                    MPISIZE,MYPE-1,ITAG,VAR(:,NY-IY/2+1:NY,:),                    NX*NZ*(IY/2),MPISIZE,MYPE+1,ITAG,                    MPI_COMM_WORLD,ISTATUS,IERR)':
-                (['VAR(:,IY/2+1:IY,:)'], ['VAR(:,NY-IY/2+1:NY,:)']),
+                (['VAR'], ['VAR']),
             'CALL MPI_SENDRECV(VAR(:,NY-IY+1:NY-IY/2,:),NX*NZ*(IY/2),                    MPISIZE,MYPE+1,ITAG,VAR(:,1:IY/2,:),                    NX*NZ*(IY/2),MPISIZE,MYPE-1,ITAG,                    MPI_COMM_WORLD,ISTATUS,IERR)':
-                (['VAR(:,NY-IY+1:NY-IY/2,:)'], ['VAR(:,1:IY/2,:)']),
+                (['VAR'], ['VAR']),
             'CALL MPI_SENDRECV(VAR(1,1,ILAP/2+1),NX*NY*(ILAP/2),                    MPISIZE,MYPE-NPEY,ITAG,VAR(1,1,NZ-ILAP/2+1),                    NX*NY*(ILAP/2),MPISIZE,MYPE+NPEY,ITAG,                    MPI_COMM_WORLD,ISTATUS,IERR)':
-                (['VAR(:,:,ILAP/2+1:ILAP/2+ILAP/2)'], ['VAR(:,:,NZ-ILAP/2+1:NZ)']),
+                (['VAR'], ['VAR']),
             'CALL MPI_SENDRECV(FRADM(ILAP/2+1),1,MPISIZE,                    MYPE-NPEY,ITAG,FRADM(NZ),1,MPISIZE,                    MYPE+NPEY,ITAG,MPI_COMM_WORLD,ISTATUS,IERR)':
             #     (['FRADM(ILAP/2+1)'], ['FRADM(NZ)']),
                   ([],[]),
             'CALL MPI_SENDRECV(VAR(1,1,NZ-ILAP+1),NX*NY*(ILAP/2),                    MPISIZE,MYPE+NPEY,ITAG,VAR(1,1,1),                    NX*NY*(ILAP/2),MPISIZE,MYPE-NPEY,ITAG,                    MPI_COMM_WORLD,ISTATUS,IERR)':
-                (['VAR(:,:,NZ-ILAP+1:NZ-ILAP+ILAP/2)'], ['VAR(:,:,:ILAP/2)'])
+                (['VAR'], ['VAR'])
         },
         'mpi_bcast': {
             'CALL MPI_BCAST(TFAC,1,MPISIZE,NPE-1,                                           MPI_COMM_WORLD,IERR)':
@@ -118,22 +117,16 @@ def transpile_mpi_statement(s: Call):
     data = data[s.designator][s.item.line]
     if data == [] or data == ([],[]):
         return
-    match s.designator:
-        case 'mpi_send':
-            insert_comment_at_index(s.parent,
-                                    update_self_directive(data),
-                                    s.parent.content.index(s))
-        case 'mpi_recv' | 'mpi_bcast':
-            insert_comment_at_index(s.parent,
-                                    update_device_directive(data),
-                                    s.parent.content.index(s) + 1)
-        case 'mpi_sendrecv' | 'mpi_allreduce':
-            insert_comment_at_index(s.parent,
-                                    update_device_directive(data[1]),
-                                    s.parent.content.index(s) + 1)
-            insert_comment_at_index(s.parent,
-                                    update_self_directive(data[0]),
-                                    s.parent.content.index(s))
+    all_variables = set()
+    if isinstance(data, list):
+        for d in data:
+            all_variables.add(d)
+    else:
+        for t in data:
+            for d in t:
+                all_variables.add(d)
+    insert_comment_at_index(s.parent, host_data_use_device(list(all_variables)), s.parent.content.index(s))
+    insert_comment_at_index(s.parent, host_data_use_device_end(), s.parent.content.index(s)+1)
 
 
 program = srcs['3dmhd.f'].content[0]

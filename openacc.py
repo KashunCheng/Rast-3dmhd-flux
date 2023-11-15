@@ -40,5 +40,11 @@ def update_device_directive(variables: List[str]) -> str:
     return f'C$acc update device({",".join(variables)})'
 
 
+def host_data_use_device(variables: List[str]) -> str:
+    return f'C$acc host_data use_device({",".join(variables)})'
+
+def host_data_use_device_end() -> str:
+    return f'C$acc end host_data'
+
 if __name__ == '__main__':
     print(data_directive(copy=['wave1'], copy_in=['wave0'], create=['wave2']))
