@@ -1,4 +1,4 @@
-C      BEGINSOURCE <_io.StringIO object at 0x105f7ce50> mode=fix
+C      BEGINSOURCE <_io.StringIO object at 0x10483f760> mode=fix
         SUBROUTINE slength(strng, jlen)
           CHARACTER(LEN=80) strng
           ilen = len(strng)
@@ -2914,7 +2914,7 @@ C$acc update self(VAR(:,:,ILAP/2+1:ILAP/2+ILAP/2))
               CALL mpi_send(var(1,1,ilap/2+1), nx*ny*(ilap/2), mpisize, &
      &mype-npey, itag, mpi_comm_world, ierr)
             ELSE
-C$acc update self(VAR(:,:,ILAP/2+ILAP/2))
+C$acc update self(VAR(:,:,ILAP/2+1:ILAP/2+ILAP/2))
               CALL mpi_sendrecv(var(1,1,ilap/2+1), nx*ny*(ilap/2), mpisi&
      &ze, mype-npey, itag, var(1,1,nz-ilap/2+1), nx*ny*(ilap/2), mpisize&
      &, mype+npey, itag, mpi_comm_world, istatus, ierr)
@@ -2975,11 +2975,15 @@ C$acc update self(VAR(:,NY-IY+1:NY-IY/2,:))
      &ize, mype-npey+1, itag, mpi_comm_world, ierr)
             END IF
           ELSE
+C$acc kernels
             var(:,1:iy/2,:) = var(:,ny-iy+1:ny-iy/2,:)
             var(:,ny-iy/2+1:ny,:) = var(:,iy/2+1:iy,:)
+C$acc end kernels
           END IF
+C$acc kernels
           var(1:ix/2,:,:) = var(nx-ix+1:nx-ix/2,:,:)
           var(nx-ix/2+1:nx,:,:) = var(ix/2+1:ix,:,:)
+C$acc end kernels
           RETURN
         END SUBROUTINE comm_mpi
         SUBROUTINE horizontal_mean(varm, var)

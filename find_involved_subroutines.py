@@ -169,6 +169,10 @@ def execute_fixup(gpu_code):
         insert_comment_at_index(s.parent, update_self_directive(['zee']), s.parent.content.index(s))
     for s in filter(lambda x: x.variable.startswith('fradm'), illegal_movement['fluxes']):
         insert_comment_at_index(s.parent, update_self_directive(['dzzdz', 'rkapa']), s.parent.content.index(s))
+    # handle comm mpi
+    for s in illegal_movement['comm_mpi']:
+        insert_comment_at_index(s.parent, kernels_directive(), s.parent.content.index(s))
+        insert_comment_at_index(s.parent, kernels_directive_end(), s.parent.content.index(s) + 1)
 
     # handle time step loop
     loop_variable_access = analyze_variable_lifecycle(do_loop, BlockSideEffects())

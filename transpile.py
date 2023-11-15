@@ -85,7 +85,7 @@ def transpile_mpi_statement(s: Call):
             'CALL MPI_SENDRECV(VAR(:,NY-IY+1:NY-IY/2,:),NX*NZ*(IY/2),                    MPISIZE,MYPE+1,ITAG,VAR(:,1:IY/2,:),                    NX*NZ*(IY/2),MPISIZE,MYPE-1,ITAG,                    MPI_COMM_WORLD,ISTATUS,IERR)':
                 (['VAR(:,NY-IY+1:NY-IY/2,:)'], ['VAR(:,1:IY/2,:)']),
             'CALL MPI_SENDRECV(VAR(1,1,ILAP/2+1),NX*NY*(ILAP/2),                    MPISIZE,MYPE-NPEY,ITAG,VAR(1,1,NZ-ILAP/2+1),                    NX*NY*(ILAP/2),MPISIZE,MYPE+NPEY,ITAG,                    MPI_COMM_WORLD,ISTATUS,IERR)':
-                (['VAR(:,:,ILAP/2+ILAP/2)'], ['VAR(:,:,NZ-ILAP/2+1:NZ)']),
+                (['VAR(:,:,ILAP/2+1:ILAP/2+ILAP/2)'], ['VAR(:,:,NZ-ILAP/2+1:NZ)']),
             'CALL MPI_SENDRECV(FRADM(ILAP/2+1),1,MPISIZE,                    MYPE-NPEY,ITAG,FRADM(NZ),1,MPISIZE,                    MYPE+NPEY,ITAG,MPI_COMM_WORLD,ISTATUS,IERR)':
             #     (['FRADM(ILAP/2+1)'], ['FRADM(NZ)']),
                   ([],[]),

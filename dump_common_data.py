@@ -1,5 +1,9 @@
 def generate_dump_common_data(common_data: list[str]):
-    call_save_npy = list(map(lambda x: f"WRITE (fileName, '(A,I0,A)') '{x[1]}_', mpi_rank, '.bin'\nC$acc update self({x[1]})\n      open(unit={19021+x[0]}, file=fileName, form='unformatted')\n      write({19021+x[0]}) {x[1]}\n      close({19021+x[0]})", enumerate(common_data)))
+    common_data = ['uu', 'ru', 'zru', 'fu', 'rv', 'zrv', 'fv', 'rw', 'zrw', 'fw', 'tt', 'ztt', 'ft', 'ro', 'zro', 'fr']
+    call_save_npy = list(map(lambda x: f"WRITE (fileName, '(A,I0,A)') '{x[1]}_', mpi_rank, '.bin'\nC$acc update self({x[1]})\n      open(unit={19021+x[0]}, file=fileName, form='unformatted', access='DIRECT&\n     &', RECL=iword*(nx)*(ny)*(nz))\n      write({19021+x[0]}) {x[1]}\n      close({19021+x[0]})", enumerate(common_data)))
+    call_save_npy += list(map(lambda x: f"WRITE (fileName, '(A,I0,A)') '{x[1]}_', mpi_rank, '.bin'\nC$acc update self({x[1]})\n      open(unit={19121+x[0]}, file=fileName, form='unformatted', access='DIRECT&\n     &', RECL=iword*nx)\n      write({19121+x[0]}) {x[1]}\n      close({19121+x[0]})", enumerate(['dxxdx'])))
+    call_save_npy += list(map(lambda x: f"WRITE (fileName, '(A,I0,A)') '{x[1]}_', mpi_rank, '.bin'\nC$acc update self({x[1]})\n      open(unit={19221+x[0]}, file=fileName, form='unformatted', access='DIRECT&\n     &', RECL=iword*ny)\n      write({19221+x[0]}) {x[1]}\n      close({19221+x[0]})", enumerate(['dyydy'])))
+
     call_save_npy = "\n      ".join(call_save_npy)
     return f"""      SUBROUTINE DUMP_COMMON_DATA
       include '3dmhdparam.f'
@@ -50,9 +54,13 @@ C
       COMMON/COMMUN/MYPE,MYPEY,MYPEZ,MPISIZE
       COMMON/RELAX/TSTART,TOFF,RLAX
       INTEGER mpi_rank, ierr
+      INTEGER, SAVE :: call_cnt = 0
       CHARACTER*30 fileName
       CALL MPI_COMM_RANK(MPI_COMM_WORLD, mpi_rank, ierr)
+      call_cnt = call_cnt + 1
       {call_save_npy}
-      CALL mpi_finalize(ierr)
-      STOP
+      if (call_cnt.EQ.2) then
+          CALL mpi_finalize(ierr)
+          STOP
+      END IF
       END SUBROUTINE DUMP_COMMON_DATA"""
