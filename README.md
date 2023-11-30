@@ -294,5 +294,10 @@ These statements are fixed manually.
 
 Do loops are ignored in `track_illegal_data_movement` because all loops are inspected in the previous section.
 
+## Speedup
+Around 10x-20x.
+CPU: epyc 7742 * 2 per node, 2 nodes
+GPU: 3 * NVIDIA V100 32 GB * 3 per node, 2 nodes
+
 ## Debug
 [dump_common_data.py](dump_common_data.py) will generate a fortran subroutine that dump all arrays in the `COMMON` block to binary files.
